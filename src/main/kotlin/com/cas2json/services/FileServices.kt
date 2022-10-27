@@ -46,29 +46,46 @@ class FileServices{
         return fileName;
     }
 
-    fun runProcess(pdfFilePath: String, password: String, pyScript: String): Boolean {
+    fun runProcess(pdfFilePath: String, password: String,scriptPath: String): Map<String, Any?> {
+
+        var builder:ProcessBuilder = ProcessBuilder("python",scriptPath,pdfFilePath,password);
         try
         {
-            var builder:ProcessBuilder = ProcessBuilder("python",pyScript,pdfFilePath,password);
             var process:Process = builder.start();
 
             //For Printing or Storing Output
-//            var reader:BufferedReader = BufferedReader(InputStreamReader(process.getInputStream()))
-//
-//            var lines:String?=null;
-//            lines=reader.readLine();
+            var reader:BufferedReader = BufferedReader(InputStreamReader(process.getInputStream()))
+            var Errreader:BufferedReader = BufferedReader(InputStreamReader(process.getErrorStream()))
+
+            val builder:StringBuilder = java.lang.StringBuilder();
+
+            var lines:String?=null;
+
+            lines=reader.readLine();
+            while (lines!=null)
+            {
+                builder.append(lines);
+                builder.append(System.getProperty("line.separator"))
+                lines=reader.readLine();
+            }
+
+//            lines=Errreader.readLine();
 //            while (lines!=null)
 //            {
-//                println(lines);
-//                lines=reader.readLine();
+//                println(lines)
+//
+//                lines=Errreader.readLine()
 //            }
+            val exitCode:Int = process.waitFor();
+
+            if(exitCode!=0) return mapOf<String,Any?>("status" to false, "message" to builder.toString());
         }
         catch (e: Exception)
         {
             e.printStackTrace()
-            return false;
+            return mapOf<String,Any?>("status" to false, "message" to "Some Error Caused While Parsing Data!");
         }
-        return true;
+        return mapOf<String,Any?>("status" to true, "message" to "Successfully Parsed the Data!");
     }
 
 }

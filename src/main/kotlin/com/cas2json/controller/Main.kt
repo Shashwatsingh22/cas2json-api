@@ -1,6 +1,5 @@
 package com.cas2json.controller
 
-import com.cas2json.payloads.UploadRes
 import com.cas2json.services.FileServices
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
@@ -23,7 +22,7 @@ import org.springframework.core.io.Resource
 
 @RestController
 @RequestMapping("/")
-class main (
+class Main (
     private  val fileService: FileServices,
     
     @Value("\${project.filePath}")
@@ -42,17 +41,20 @@ class main (
     fun uploadFile(@RequestParam("pdfFile") file:MultipartFile, @RequestParam("password") password:String) : Map<String, Any?> {
         var fileName: String= "";
         var downloadURL:String = "";
+        var fileNameN:String = "";
+        var output:Map<String,Any?>;
             try {
             fileName = this.fileService.uploadFile(path, file).toString()
+            fileNameN=if(fileName.indexOf(".")>0) fileName.substring(0,fileName.lastIndexOf(".")) else ""
 
                 try
                 {
-                    this.fileService.runProcess(path+fileName,password,scriptPath)
+                    output=this.fileService.runProcess(path+fileName, password, scriptPath)
                 }
                 catch (e: Exception)
                 {
                     e.printStackTrace();
-                    return  mapOf("status" to false, "message" to "Not Able to Parse the Data","OutPutFileName" to null,"downloadUrl" to null,"OutputFileType" to null);
+                    return  mapOf("status" to false, "message" to "Not Able to Parse the Data");
                     //UploadRes(false,null,null ,"Problem in Parsing the Data!",null)
                 }
         }
@@ -60,14 +62,14 @@ class main (
         {
             e.printStackTrace();
             //If Exception Happened then
-            return mapOf("status" to false, "message" to "Not Able to Upload the File","OutPutFileName" to null,"downloadUrl" to null,"OutputFileType" to null);
+            return mapOf("status" to false, "message" to "Not Able to Upload the File");
             //UploadRes(false,null,null ,"Error in Uploading the File",null)
         }
 
-        var fileNameN:String = if(fileName.indexOf(".")>0) fileName.substring(0,fileName.lastIndexOf(".")) else ""
-        downloadURL=ServletUriComponentsBuilder.fromCurrentContextPath().path("/download/").path(fileNameN+".json").toUriString()
+        if(output["status"] ==false) return mapOf("status" to false, "message" to output["message"]);
 
-        return mapOf("status" to true, "message" to "Successfully parsed the file","OutPutFileName" to fileNameN+".json","downloadUrl" to downloadURL);
+        downloadURL=ServletUriComponentsBuilder.fromCurrentContextPath().path("/download/").path(fileNameN+".json").toUriString()
+        return mapOf("status" to true, "message" to output["message"],"OutPutFileName" to fileNameN+".json","downloadUrl" to downloadURL);
         //UploadRes(true,fileNameN+".json",downloadURL ,"Successfully Parsed the Data!",contentType)
     }
 
